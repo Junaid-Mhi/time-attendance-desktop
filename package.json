@@ -1,0 +1,43 @@
+{
+  "name": "timeattendance-desktop",
+  "version": "1.0.0",
+  "desktopName": "com.impexum.timeattendance",
+  "description": "Time Attendance Desktop Application",
+  "homepage": "https://impexum.com",
+  "author": {
+    "name": "Impexum",
+    "email": "info@impexum.com"
+  },
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron . --no-sandbox\"",
+    "build": "vite build",
+    "dist:linux": "npm run build && electron-builder --linux --config electron-builder.yml",
+    "dist:win": "npm run build && electron-builder --win --config electron-builder.yml",
+    "dist:mac": "npm run build && electron-builder --mac --config electron-builder.yml",
+    "dist:all": "npm run build && electron-builder --linux --win --config electron-builder.yml"
+  },
+  "keywords": [
+    "electron",
+    "vue",
+    "attendance"
+  ],
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.20.0",
+    "bootstrap": "^5.3.8",
+    "electron-store": "^8.2.0",
+    "pinia": "^4.0.3",
+    "vue": "^3.5.43",
+    "vue-router": "^5.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.9",
+    "concurrently": "^10.0.5",
+    "electron": "^32.2.8",
+    "electron-builder": "^26.15.3",
+    "vite": "^8.3.0",
+    "wait-on": "^9.1.0"
+  }
+}

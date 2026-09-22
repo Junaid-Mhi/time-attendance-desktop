@@ -1,0 +1,110 @@
+name: Build Desktop Apps
+
+on:
+  push:
+    tags:
+      - 'v*'          # Trigger on tags like v1.0.0
+  workflow_dispatch:   # Or trigger manually from GitHub UI
+
+jobs:
+  # ============================================================
+  # BUILD FOR ALL PLATFORMS
+  # ============================================================
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            build_cmd: dist:win
+            artifact_name: windows-installer
+            artifact_path: release/*.exe
+
+          - os: macos-latest
+            build_cmd: dist:mac
+            artifact_name: macos-installer
+            artifact_path: release/*.dmg
+
+          - os: ubuntu-latest
+            build_cmd: dist:linux
+            artifact_name: linux-packages
+            artifact_path: |
+              release/*.AppImage
+              release/*.deb
+
+    steps:
+      # ---------- Checkout ----------
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ---------- Setup Node ----------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # ---------- Install dependencies ----------
+      - name: Install dependencies
+        run: npm ci
+
+      # ---------- Build ----------
+      - name: Build
+        run: npm run ${{ matrix.build_cmd }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---------- Upload artifact ----------
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_path }}
+          retention-days: 30
+
+  # ============================================================
+  # CREATE GITHUB RELEASE (on tag)
+  # ============================================================
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    permissions:
+      contents: write
+
+    steps:
+      # ---------- Download all artifacts ----------
+      - name: Download Windows build
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-installer
+          path: release-assets/windows
+
+      - name: Download macOS build
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-installer
+          path: release-assets/macos
+
+      - name: Download Linux build
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-packages
+          path: release-assets/linux
+
+      # ---------- List files (debug) ----------
+      - name: List release assets
+        run: find release-assets -type f
+
+      # ---------- Create Release ----------
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/**/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
