@@ -56,7 +56,8 @@ onMounted(() => {
 
             <!-- Error Alert -->
             <div v-if="localError" class="alert alert-danger py-2 small">
-                ❌ {{ localError }}
+                <i class="bi bi-exclamation-circle"></i>
+                 {{ localError }}
             </div>
 
             <!-- Login Form -->
@@ -91,8 +92,9 @@ onMounted(() => {
                             class="btn btn-outline-secondary"
                             @click="togglePassword"
                             tabindex="-1"
+                            :aria-label="showPassword ? 'Hide password' : 'Show password'"
                         >
-                            {{ showPassword ? '🙈' : '👁' }}
+                            <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
                         </button>
                     </div>
                 </div>
