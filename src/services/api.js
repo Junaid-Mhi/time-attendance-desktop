@@ -35,8 +35,14 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        // ---- 401 Unauthorized ----
-        if (error.response?.status === 401) {
+        const status = error.response?.status
+        const data = error.response?.data
+        const url = error.config?.url || ''
+
+        const isLoginRequest = url.includes('/api/ta/login')
+
+        // ---- Session expiry handling (non-login 401s) ----
+        if (status === 401 && !isLoginRequest) {
             window.dispatchEvent(new CustomEvent('api:unauthorized'))
             return Promise.reject({
                 message: 'Session expired. Please login again.',
@@ -62,30 +68,30 @@ api.interceptors.response.use(
             })
         }
 
-        // ---- Server responded with an error ----
-        const { status, data } = error.response
+        // ---- Extract message (priority order) ----
+        let message = null
 
-        // Extract meaningful message
-        // Priority: data.message > data.error > data.errors[first] > default per status
-            let message = null
+        // 1. Validation errors → first error message
+        if (status === 422 && data?.errors) {
+            message = Object.values(data.errors).flat()[0]
+        }
 
-            // Prefer our own clean messages for standard HTTP errors
-            // Use backend message only for validation errors (they're user-friendly)
-            if (status === 422 && data?.errors) {
-                // Validation: use first error from errors object
-                message = Object.values(data.errors).flat()[0]
-            } else if (data?.code) {
-                // Backend explicitly sent a code (e.g., ATTENDANCE_ERROR)
-                // Use its message
-                message = data.message || data.error
-            }
+        // 2. Backend `message` field (used by most endpoints including login)
+        if (!message && typeof data?.message === 'string' && data.message.trim() !== '') {
+            message = data.message
+        }
 
-            // Fallback to our default
-            if (!message || typeof message !== 'string') {
-                message = defaultMessageFor(status)
-            }
+        // 3. Backend `error` field (fallback)
+        if (!message && typeof data?.error === 'string' && data.error.trim() !== '') {
+            message = data.error
+        }
 
-        // Extract code (if backend sends one)
+        // 4. Generic message per status code
+        if (!message) {
+            message = defaultMessageFor(status)
+        }
+
+        // ---- Code (from backend or default) ----
         const code = data?.code || defaultCodeFor(status)
 
         return Promise.reject({
@@ -102,6 +108,7 @@ api.interceptors.response.use(
 function defaultMessageFor(status) {
     const messages = {
         400: 'Invalid request. Please check your input.',
+        401: 'Authentication failed.',
         403: 'You do not have permission to do this.',
         404: 'The requested resource was not found.',
         405: 'This action is not allowed.',
@@ -123,6 +130,7 @@ function defaultMessageFor(status) {
 function defaultCodeFor(status) {
     const codes = {
         400: 'BAD_REQUEST',
+        401: 'UNAUTHENTICATED',
         403: 'FORBIDDEN',
         404: 'NOT_FOUND',
         405: 'METHOD_NOT_ALLOWED',

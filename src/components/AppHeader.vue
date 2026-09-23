@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToastStore } from '@/stores/toast'
 import { useAuthStore } from '@/stores/auth'
+import logoUrl from '@/assets/logo.png'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -57,6 +58,10 @@ if (typeof window !== 'undefined') {
                 <span class="brand-text">Time Attendance</span>
             </div>
 
+              <div class="header-logo">
+                <img :src="logoUrl" alt="Logo" />
+            </div>
+
             <!-- Right: User dropdown -->
             <div class="profile-menu-wrapper">
                 <button class="user-btn" @click="toggleMenu">
@@ -107,6 +112,22 @@ if (typeof window !== 'undefined') {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
+    position: relative;
+}
+
+.header-logo {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+}
+
+.header-logo img {
+    height: 40px;
+    width: auto;
+    max-width: 160px;
+    object-fit: contain;
 }
 
 .brand {

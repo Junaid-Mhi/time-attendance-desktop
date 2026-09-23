@@ -4,6 +4,8 @@ import { useRouter } from 'vue-router'
 import { useToastStore } from '@/stores/toast'
 import { useAuthStore } from '@/stores/auth'
 import { config } from '@/config'
+import logoUrl from '@/assets/logo.png'
+
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -47,7 +49,7 @@ onMounted(() => {
         <div class="login-card">
             <!-- Logo / Brand -->
             <div class="text-center mb-4">
-                <div class="brand-icon">⏰</div>
+                <div class="brand-icon"><img :src="logoUrl" alt="Logo" /></div>
                 <h1 class="brand-title">{{ config.APP_NAME }}</h1>
                 <p class="brand-subtitle">Welcome Back</p>
             </div>
@@ -133,9 +135,17 @@ onMounted(() => {
 }
 
 .brand-icon {
-    font-size: 48px;
-    line-height: 1;
-    margin-bottom: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.brand-icon img {
+    height: 75px;
+    width: auto;
+    max-width: 200px;
+    object-fit: contain;
 }
 
 .brand-title {

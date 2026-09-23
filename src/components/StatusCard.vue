@@ -199,8 +199,8 @@ const formattedCheckOut = computed(() => {
                 </div>
             </div>
 
-            <p class="mt-3 mb-0 text-success fw-semibold">
-                Great work today! 🎉
+            <p class="mt-3 mb-0 text-muted small">
+                Need to work more? Click "Check In Again" below.
             </p>
         </template>
     </div>

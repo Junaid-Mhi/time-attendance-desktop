@@ -143,9 +143,19 @@ async function handleResume() {
         </div>
 
         <!-- COMPLETED — no buttons -->
-        <div v-else-if="state === 'completed'" class="text-center text-muted small py-2">
-            <i class="bi bi-check-circle me-1"></i>
-            All done for today
+     <div v-else-if="state === 'completed'" class="action-row">
+            <button
+                class="btn-action btn-check-in"
+                :disabled="attendance.loading || !attendance.actions.can_check_in"
+                @click="handleCheckIn"
+            >
+                <i v-if="!attendance.loading" class="bi bi-arrow-clockwise"></i>
+                <span v-if="!attendance.loading">Check In Again</span>
+                <span v-else>
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                    Checking in...
+                </span>
+            </button>
         </div>
 
         <!-- NO SHIFT — no buttons -->
