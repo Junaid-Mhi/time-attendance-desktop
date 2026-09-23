@@ -76,6 +76,7 @@ onUnmounted(() => {
                 </div>
 
                 <!-- Loaded -->
+                
                 <template v-else>
                     <StatusCard />
                     <ActionButtons />
