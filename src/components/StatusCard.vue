@@ -131,7 +131,7 @@ const formattedCheckOut = computed(() => {
         <template v-else-if="state === 'on-break'">
             <div class="status-header">
                 <span class="pulse-dot orange"></span>
-                <h2 class="status-title">On Break ☕</h2>
+                <h2 class="status-title">On Break </h2>
             </div>
 
             <div class="timer-row">

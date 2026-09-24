@@ -7,9 +7,10 @@ import logoUrl from '@/assets/logo.png'
 
 const router = useRouter()
 const auth = useAuthStore()
+const toast = useToastStore()
 
 const showMenu = ref(false)
-const toast = useToastStore()
+const refreshing = ref(false)
 
 const initials = computed(() => {
     const name = auth.userName || 'U'
@@ -30,6 +31,21 @@ function goToHistory() {
     router.push({ name: 'history' })
 }
 
+async function handleRefresh() {
+    if (refreshing.value) return
+
+    refreshing.value = true
+
+    if (window.electronAPI?.hardReload) {
+        setTimeout(() => {
+            window.electronAPI.hardReload()
+        }, 150)
+        return
+    }
+
+    window.location.reload()
+}
+
 async function handleLogout() {
     showMenu.value = false
     await auth.logout()
@@ -37,7 +53,6 @@ async function handleLogout() {
     router.push({ name: 'login' })
 }
 
-// Close menu when clicking outside
 function closeMenu(e) {
     if (!e.target.closest('.profile-menu-wrapper')) {
         showMenu.value = false
@@ -52,41 +67,64 @@ if (typeof window !== 'undefined') {
 <template>
     <header class="app-header">
         <div class="header-inner">
+
             <!-- Left: Brand -->
             <div class="brand">
                 <i class="bi bi-clock-history brand-icon"></i>
                 <span class="brand-text">Time Attendance</span>
             </div>
 
-              <div class="header-logo">
+            <!-- Center: Logo -->
+            <div class="header-logo">
                 <img :src="logoUrl" alt="Logo" />
             </div>
 
-            <!-- Right: User dropdown -->
-            <div class="profile-menu-wrapper">
-                <button class="user-btn" @click="toggleMenu">
-                    <span class="avatar">{{ initials }}</span>
-                    <span class="user-name">{{ auth.userName }}</span>
-                    <i class="bi bi-chevron-down ms-1"></i>
+            <!-- Right: Refresh + User -->
+            <div class="header-actions">
+
+                <!-- Refresh -->
+                <button
+                    class="refresh-btn"
+                    :disabled="refreshing"
+                    @click="handleRefresh"
+                    title="Reload app"
+                >
+                    <i
+                        class="bi bi-arrow-clockwise"
+                        :class="{ spin: refreshing }"
+                    ></i>
+                    <span class="d-none d-md-inline">
+                        {{ refreshing ? 'Refreshing...' : 'Refresh' }}
+                    </span>
                 </button>
 
-                <!-- Dropdown -->
-                <div v-if="showMenu" class="dropdown-menu-custom">
-                    <div class="dropdown-header-custom">
-                        <strong>{{ auth.userName }}</strong>
-                        <small class="text-muted d-block">{{ auth.userEmail }}</small>
+                <!-- User dropdown -->
+                <div class="profile-menu-wrapper">
+                    <button class="user-btn" @click="toggleMenu">
+                        <span class="avatar">{{ initials }}</span>
+                        <span class="user-name">{{ auth.userName }}</span>
+                        <i class="bi bi-chevron-down ms-1"></i>
+                    </button>
+
+                    <div v-if="showMenu" class="dropdown-menu-custom">
+                        <div class="dropdown-header-custom">
+                            <strong>{{ auth.userName }}</strong>
+                            <small class="text-muted d-block">{{ auth.userEmail }}</small>
+                        </div>
+                        <hr class="my-1" />
+                        <button class="dropdown-item-custom" @click="goToHistory">
+                            <i class="bi bi-clock-history me-2"></i>
+                            View History
+                        </button>
+                        <button class="dropdown-item-custom danger" @click="handleLogout">
+                            <i class="bi bi-box-arrow-right me-2"></i>
+                            Logout
+                        </button>
                     </div>
-                    <hr class="my-1" />
-                    <button class="dropdown-item-custom" @click="goToHistory">
-                        <i class="bi bi-clock-history me-2"></i>
-                        View History
-                    </button>
-                    <button class="dropdown-item-custom danger" @click="handleLogout">
-                        <i class="bi bi-box-arrow-right me-2"></i>
-                        Logout
-                    </button>
                 </div>
+
             </div>
+
         </div>
     </header>
 </template>
@@ -142,6 +180,46 @@ if (typeof window !== 'undefined') {
 .brand-icon {
     font-size: 24px;
     color: #667eea;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.refresh-btn {
+    background: transparent;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 6px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #4b5563;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.refresh-btn:hover:not(:disabled) {
+    background: #ededed;
+    color: #1f2937;
+    border-color: #d1d5db;
+}
+
+.refresh-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 .profile-menu-wrapper {

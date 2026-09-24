@@ -10,6 +10,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // User info storage
     getUser: () => ipcRenderer.invoke('store:get-user'),
     setUser: (user) => ipcRenderer.invoke('store:set-user', user),
+    hardReload: () => ipcRenderer.invoke('app:hard-reload'),
+
+    getSavedEmails: () => ipcRenderer.invoke('store:get-saved-emails'),
+    addSavedEmail: (email) => ipcRenderer.invoke('store:add-saved-email', email),
 
     // Environment info
     isDev: () => !process.env.NODE_ENV || process.env.NODE_ENV === 'development',

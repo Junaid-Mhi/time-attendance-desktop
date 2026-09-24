@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { useAttendanceStore } from '@/stores/attendance'
 import { useAttendanceTimer } from '@/composables/useAttendanceTimer'
 import { useToastStore } from '@/stores/toast'
@@ -9,8 +9,11 @@ const attendance = useAttendanceStore()
 
 const showPauseModal = ref(false)
 const pauseReason = ref('lunch')
+const customReason = ref('') 
 const showCheckoutModal = ref(false)
 const errorMessage = ref('')
+const errorProgress = ref(100)
+let errorTimer = null
 const toast = useToastStore()
 
 const attendanceRef = computed(() => attendance.attendance)
@@ -56,13 +59,26 @@ async function handleCheckOut() {
 }
 
 async function handlePause() {
+    // Determine the reason to send
+    let finalReason = pauseReason.value
+
+    if (pauseReason.value === 'other') {
+        finalReason = customReason.value.trim()
+
+        // Block if user selected "Other" but left it empty
+        if (!finalReason) {
+            errorMessage.value = 'Please enter a custom reason.'
+            return
+        }
+    }
+
     showPauseModal.value = false
     errorMessage.value = ''
-    const result = await attendance.pause(pauseReason.value)
+
+    const result = await attendance.pause(finalReason)
+
     if (result.success) {
-        const label = pauseReason.value
-            ? pauseReason.value.charAt(0).toUpperCase() + pauseReason.value.slice(1)
-            : 'Break'
+        const label = finalReason.charAt(0).toUpperCase() + finalReason.slice(1)
         toast.success(`Break started (${label})`)
     } else {
         errorMessage.value = result.message
@@ -79,16 +95,70 @@ async function handleResume() {
         errorMessage.value = result.message
         toast.error(result.message)
     }
+
+
+}   
+ function openPauseModal() {
+    pauseReason.value = 'lunch'
+    customReason.value = ''
+    showPauseModal.value = true
 }
+
+watch(errorMessage, (newValue) => {
+    // Clear any existing timer
+    if (errorTimer) {
+        clearInterval(errorTimer)
+        errorTimer = null
+    }
+
+    if (newValue) {
+        errorProgress.value = 100
+
+        // Decrease progress every 50ms
+        // 100 steps × 50ms = 5000ms = 5 seconds
+        errorTimer = setInterval(() => {
+            errorProgress.value -= 1
+
+            if (errorProgress.value <= 0) {
+                clearInterval(errorTimer)
+                errorTimer = null
+                errorMessage.value = ''
+                errorProgress.value = 100  // reset for next time
+            }
+        }, 50)
+    }
+})
+
+// Clean up on unmount
+onUnmounted(() => {
+    if (errorTimer) {
+        clearInterval(errorTimer)
+        errorTimer = null
+    }
+})
 </script>
 
 <template>
     <div class="action-wrapper">
         <!-- Error -->
-        <div v-if="errorMessage" class="alert alert-danger py-2 small mb-3">
+      <div v-if="errorMessage" class="error-alert">
+    <div class="error-progress" :style="{ width: errorProgress + '%' }"></div>
+
+    <div class="error-content">
+        <span>
             <i class="bi bi-exclamation-circle me-1"></i>
             {{ errorMessage }}
-        </div>
+        </span>
+        <button
+            type="button"
+            class="error-close"
+            @click="errorMessage = ''"
+            aria-label="Dismiss"
+        >
+            ×
+        </button>
+    </div>
+</div>
 
         <!-- NOT CHECKED IN — Check In button -->
         <div v-if="state === 'not-checked-in'" class="action-row">
@@ -111,7 +181,7 @@ async function handleResume() {
             <button
                 class="btn-action btn-pause"
                 :disabled="attendance.loading || !attendance.actions.can_pause"
-                @click="showPauseModal = true"
+                @click="openPauseModal"
             >
                 <i class="bi bi-pause-circle"></i>
                 Pause
@@ -182,6 +252,19 @@ async function handleResume() {
                             {{ r.label }}
                         </option>
                     </select>
+                        <!-- Custom reason input (only shown when "Other" is selected) -->
+                    <div v-if="pauseReason === 'other'" class="mt-3">
+                        <label class="form-label small">Specify reason</label>
+                        <input
+                            v-model="customReason"
+                            type="text"
+                            class="form-control"
+                            placeholder="Enter reason..."
+                            maxlength="100"
+                            autofocus
+                        />
+                        <small class="text-muted">Max 100 characters</small>
+                    </div>
                 </div>
                 <div class="modal-footer-custom">
                     <button class="btn btn-secondary" @click="showPauseModal = false">
@@ -316,5 +399,48 @@ async function handleResume() {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
+}
+
+.error-alert {
+    position: relative;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+.error-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: #dc2626;
+    transition: width 0.05s linear;
+}
+
+.error-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #991b1b;
+}
+
+.error-close {
+    background: none;
+    border: none;
+    color: #991b1b;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0 4px;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.error-close:hover {
+    opacity: 1;
 }
 </style>

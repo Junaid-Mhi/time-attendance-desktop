@@ -126,20 +126,42 @@ export const useAttendanceStore = defineStore('attendance', () => {
      * Resume (end break).
      */
     async function resume() {
-        loading.value = true
-        error.value = null
+      loading.value = true;
+      error.value = null;
 
-        try {
-            const response = await attendanceApi.resume()
-            attendance.value = response.data
-            await fetchToday()
-            return { success: true, message: response.message }
-        } catch (e) {
-            error.value = e.message
-            return { success: false, message: e.message }
-        } finally {
-            loading.value = false
-        }
+      try {
+        const response = await attendanceApi.resume();
+        attendance.value = response.data;
+        await fetchToday();
+        return { success: true, message: response.message };
+      } catch (e) {
+        error.value = e.message;
+        return { success: false, message: e.message };
+      } finally {
+        loading.value = false;
+      }
+    }
+    async function refresh() {
+      loading.value = true;
+      error.value = null;
+
+      try {
+        const response = await attendanceApi.today();
+        const data = response.data;
+
+        profile.value = data.profile;
+        shift.value = data.shift;
+        attendance.value = data.attendance;
+        actions.value = data.actions;
+        lastSync.value = new Date();
+
+        return { success: true };
+      } catch (e) {
+        error.value = e.message || "Failed to refresh";
+        return { success: false, message: error.value };
+      } finally {
+        loading.value = false;
+      }
     }
 
     return {
@@ -163,5 +185,6 @@ export const useAttendanceStore = defineStore('attendance', () => {
         checkOut,
         pause,
         resume,
+        refresh,
     }
 })

@@ -7,25 +7,46 @@ export const useToastStore = defineStore('toast', () => {
 
     /**
      * Show a toast.
-     * @param {string} message
-     * @param {string} type - 'success' | 'error' | 'info' | 'warning'
-     * @param {number} duration - ms before auto-dismiss (default 3000)
      */
     function show(message, type = 'info', duration = 3000) {
         const id = nextId++
-        const toast = { id, message, type }
+
+        const toast = {
+            id,
+            message,
+            type,
+            progress: 100,   // starts full width
+            duration,
+        }
 
         toasts.value.push(toast)
 
-        setTimeout(() => {
-            dismiss(id)
-        }, duration)
+        // Progress ticks: every 50ms, decrease by (100 / steps)%
+        const steps = duration / 50
+        const decrement = 100 / steps
+
+        const timer = setInterval(() => {
+            const current = toasts.value.find((t) => t.id === id)
+
+            // Toast was dismissed manually → stop interval
+            if (!current) {
+                clearInterval(timer)
+                return
+            }
+
+            current.progress -= decrement
+
+            if (current.progress <= 0) {
+                clearInterval(timer)
+                dismiss(id)
+            }
+        }, 50)
 
         return id
     }
 
     function success(message) {
-        return show(message, 'success')
+        return show(message, 'success', 3000)
     }
 
     function error(message) {
@@ -33,7 +54,7 @@ export const useToastStore = defineStore('toast', () => {
     }
 
     function info(message) {
-        return show(message, 'info')
+        return show(message, 'info', 3000)
     }
 
     function warning(message) {

@@ -57,6 +57,10 @@ export const useAuthStore = defineStore('auth', () => {
             await window.electronAPI?.setToken?.(response.token)
             await window.electronAPI?.setUser?.(response.user)
 
+            // Save email for future login suggestions
+            await window.electronAPI?.addSavedEmail?.(email)
+
+
             return { success: true }
         } catch (e) {
             error.value = e.message || 'Login failed'

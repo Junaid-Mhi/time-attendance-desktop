@@ -7,7 +7,7 @@ const attendance = useAttendanceStore()
 const events = computed(() => {
     const logs = attendance.attendance?.logs || []
 
-    return logs.map((log) => ({
+    return [...logs].reverse().map((log) => ({
         id: log.id,
         action: log.action,
         label: log.action_label,

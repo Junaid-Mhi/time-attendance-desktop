@@ -65,7 +65,7 @@ onUnmounted(() => {
             <div class="dashboard-container">
                 <!-- Greeting -->
                 <div class="greeting-block">
-                    <h1>{{ auth.userName }} 👋</h1>
+                    <h1>{{ auth.userName }}</h1>
                     <p class="text-muted mb-0">{{ formattedDate }}</p>
                 </div>
 

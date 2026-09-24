@@ -16,6 +16,9 @@ const showPassword = ref(false)
 const localError = ref('')
 const toast = useToastStore()
 
+const savedEmails = ref([])
+const showSuggestions = ref(false)
+
 async function handleLogin() {
     localError.value = ''
 
@@ -38,165 +41,238 @@ function togglePassword() {
     showPassword.value = !showPassword.value
 }
 
-onMounted(() => {
+onMounted(async () => {
     // Clear any stale errors
     auth.error = null
+
+    // Load saved emails
+    const emails = await window.electronAPI?.getSavedEmails?.()
+    if (Array.isArray(emails)) {
+        savedEmails.value = emails
+    }
 })
+
+function pickEmail(savedEmail) {
+    email.value = savedEmail
+    showSuggestions.value = false
+}
+
+function hideSuggestions() {
+    setTimeout(() => {
+        showSuggestions.value = false
+    }, 150)
+}
 </script>
 
 <template>
-    <div class="login-wrapper">
-        <div class="login-card">
-            <!-- Logo / Brand -->
-            <div class="text-center mb-4">
-                <div class="brand-icon"><img :src="logoUrl" alt="Logo" /></div>
-                <h1 class="brand-title">{{ config.APP_NAME }}</h1>
-                <p class="brand-subtitle">Welcome Back</p>
-            </div>
+  <div class="login-wrapper">
+    <div class="login-card">
+      <!-- Logo / Brand -->
+      <div class="text-center mb-4">
+        <div class="brand-icon"><img :src="logoUrl" alt="Logo" /></div>
+        <h1 class="brand-title">{{ config.APP_NAME }}</h1>
+        <p class="brand-subtitle">Welcome Back</p>
+      </div>
 
-            <!-- Error Alert -->
-            <div v-if="localError" class="alert alert-danger py-2 small">
-                <i class="bi bi-exclamation-circle"></i>
-                 {{ localError }}
-            </div>
+<!-- Error Alert -->
+      <div v-if="localError" class="alert alert-danger py-2 small">
+        <i class="bi bi-exclamation-circle"></i>
+        {{ localError }}
+      </div>
 
-            <!-- Login Form -->
-            <form @submit.prevent="handleLogin">
-                <!-- Email -->
-                <div class="mb-3">
-                    <label class="form-label small">Email</label>
-                    <input
-                        v-model="email"
-                        type="email"
-                        class="form-control"
-                        placeholder="you@example.com"
-                        autocomplete="username"
-                        :disabled="auth.loading"
-                    />
-                </div>
+      <!-- Login Form -->
+      <form @submit.prevent="handleLogin">
+        <!-- Email -->
+        <div class="mb-3 position-relative">
+          <label class="form-label small">Email</label>
+          <input
+            v-model="email"
+            type="email"
+            class="form-control"
+            placeholder="you@example.com"
+            autocomplete="off"
+            :disabled="auth.loading"
+            @focus="showSuggestions = savedEmails.length > 0"
+            @blur="hideSuggestions"
+          />
 
-                <!-- Password -->
-                <div class="mb-3">
-                    <label class="form-label small">Password</label>
-                    <div class="input-group">
-                        <input
-                            v-model="password"
-                            :type="showPassword ? 'text' : 'password'"
-                            class="form-control"
-                            placeholder="Enter password"
-                            autocomplete="current-password"
-                            :disabled="auth.loading"
-                        />
-                        <button
-                            type="button"
-                            class="btn btn-outline-secondary"
-                            @click="togglePassword"
-                            tabindex="-1"
-                            :aria-label="showPassword ? 'Hide password' : 'Show password'"
-                        >
-                            <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Submit -->
-                <button
-                    type="submit"
-                    class="btn btn-primary w-100 py-2 mt-3"
-                    :disabled="auth.loading"
-                >
-                    <span v-if="!auth.loading">Sign In</span>
-                    <span v-else>
-                        <span class="spinner-border spinner-border-sm me-2"></span>
-                        Signing in...
-                    </span>
-                </button>
-            </form>
-
+          <div
+            v-if="showSuggestions && savedEmails.length > 0"
+            class="suggestions-dropdown"
+          >
+            <button
+              v-for="savedEmail in savedEmails"
+              :key="savedEmail"
+              type="button"
+              class="suggestion-item"
+              @mousedown.prevent="pickEmail(savedEmail)"
+            >
+              <i class="bi bi-person-circle me-2"></i>
+              {{ savedEmail }}
+            </button>
+          </div>
         </div>
+
+        <!-- Password -->
+        <div class="mb-3">
+          <label class="form-label small">Password</label>
+          <div class="input-group">
+            <input
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              class="form-control"
+              placeholder="Enter password"
+              autocomplete="current-password"
+              :disabled="auth.loading"
+            />
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              @click="togglePassword"
+              tabindex="-1"
+              :aria-label="showPassword ? 'Hide password' : 'Show password'"
+            >
+              <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <button
+          type="submit"
+          class="btn btn-primary w-100 py-2 mt-3"
+          :disabled="auth.loading"
+        >
+          <span v-if="!auth.loading">Sign In</span>
+          <span v-else>
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            Signing in...
+          </span>
+        </button>
+      </form>
+
+      
     </div>
+  </div>
 </template>
 
 <style scoped>
 .login-wrapper {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
 }
 
 .login-card {
-    width: 100%;
-    max-width: 440px;
-    background: #ffffff;
-    border-radius: 16px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-    padding: 40px;
+  width: 100%;
+  max-width: 440px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  padding: 40px;
 }
 
 .brand-icon {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 16px;
 }
 
 .brand-icon img {
-    height: 75px;
-    width: auto;
-    max-width: 200px;
-    object-fit: contain;
+  height: 75px;
+  width: auto;
+  max-width: 200px;
+  object-fit: contain;
+}
+
+.suggestions-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  overflow: hidden;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 14px;
+  color: #1f2937;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.suggestion-item:hover {
+  background: #f3f4f6;
+}
+
+.suggestion-item:not(:last-child) {
+  border-bottom: 1px solid #f3f4f6;
 }
 
 .brand-title {
-    font-size: 26px;
-    font-weight: 700;
-    color: #1f2937;
-    margin: 0 0 6px;
+  font-size: 26px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 6px;
 }
 
 .brand-subtitle {
-    color: #6b7280;
-    font-size: 14px;
-    margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+  margin: 0;
 }
 
 .form-label {
-    font-weight: 600;
-    color: #4b5563;
+  font-weight: 600;
+  color: #4b5563;
 }
 
 .form-control {
-    padding: 10px 14px;
-    border-radius: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
 }
 
 .form-control:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    transition: all 0.2s;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s;
 }
 
 .btn-primary:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.35);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.35);
 }
 
 .btn-primary:disabled {
-    opacity: 0.7;
+  opacity: 0.7;
 }
 
 .btn-outline-secondary {
-    border-radius: 0 8px 8px 0;
-    border-color: #dee2e6;
+  border-radius: 0 8px 8px 0;
+  border-color: #dee2e6;
 }
 </style>

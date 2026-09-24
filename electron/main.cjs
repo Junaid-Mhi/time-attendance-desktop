@@ -55,6 +55,27 @@ function registerIpcHandlers() {
   ipcMain.handle("store:clear-token", () => { store.delete("token"); return true; });
   ipcMain.handle("store:get-user", () => store.get("user", null));
   ipcMain.handle("store:set-user", (_e, u) => { store.set("user", u); return true; });
+  ipcMain.handle('app:hard-reload', () => {
+        if (mainWindow) {
+            mainWindow.webContents.reloadIgnoringCache()
+        }
+        return true
+    });
+  ipcMain.handle("store:get-saved-emails", () => store.get("saved_emails", []));
+  ipcMain.handle("store:add-saved-email", (_e, email) => {
+    if (!email || typeof email !== "string") return false;
+
+    const normalized = email.trim().toLowerCase();
+    if (!normalized) return false;
+
+    let emails = store.get("saved_emails", []);
+    emails = emails.filter((e) => e.toLowerCase() !== normalized);
+    emails.unshift(normalized);
+    emails = emails.slice(0, 5);
+
+    store.set("saved_emails", emails);
+    return true;
+  });
 }
 
 app.whenReady().then(() => {

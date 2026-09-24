@@ -23,8 +23,18 @@ function iconFor(type) {
                 :class="`toast-${t.type}`"
                 @click="toast.dismiss(t.id)"
             >
-                <i class="bi" :class="iconFor(t.type)"></i>
-                <span>{{ t.message }}</span>
+
+
+                <!-- Progress bar (shrinks over duration) -->
+                <div
+                    class="toast-progress"
+                    :style="{ width: t.progress + '%' }"
+                ></div>  
+                
+                             <div class="toast-content">
+                    <i class="bi" :class="iconFor(t.type)"></i>
+                    <span>{{ t.message }}</span>
+                </div>
             </div>
         </TransitionGroup>
     </div>
@@ -44,10 +54,7 @@ function iconFor(type) {
 
 .toast-item {
     pointer-events: auto;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 20px;
+    position: relative;
     border-radius: 10px;
     color: #ffffff;
     font-weight: 500;
@@ -56,11 +63,25 @@ function iconFor(type) {
     max-width: 400px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     cursor: pointer;
-    transition: all 0.3s;
+    overflow: hidden;
+    transition: transform 0.2s;
 }
 
 .toast-item:hover {
     transform: translateX(-4px);
+}
+
+.toast-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+}
+
+.toast-progress {
+    height: 3px;
+    background: rgba(255, 255, 255, 0.6);
+    transition: width 0.05s linear;
 }
 
 .toast-success {
@@ -79,7 +100,6 @@ function iconFor(type) {
     background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
 }
 
-/* Transition */
 .toast-enter-active,
 .toast-leave-active {
     transition: all 0.3s ease;
